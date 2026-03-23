@@ -9,12 +9,25 @@ import { errorHandler } from './middlewares/errorHandler.js';
 import { askController } from './controllers/askController.js';
 import { logger } from './utils/logger.js';
 
+const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173').split(',').map((origin) => origin.trim());
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) {
+      return callback(null, true);
+    }
+    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  optionsSuccessStatus: 204,
+};
+
 const app = express();
 
-app.use(cors({
-  origin: (process.env.CORS_ORIGINS || '*').split(',').map((origin) => origin.trim()),
-  credentials: true,
-}));
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
 app.use(requestTimeout());
 app.use(rateLimiter);
